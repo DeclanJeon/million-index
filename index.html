@@ -125,7 +125,17 @@ code{display:inline-block;margin-top:10px;padding:5px 8px;background:var(--paper
 .row.social-result{grid-template-columns:minmax(0,1fr) auto}
 .social-result .views{grid-column:auto}
 footer{border-top:1px solid var(--rule);margin-top:30px;padding-top:14px}
-.list[hidden]+.listhead{display:none}
+.result-group{list-style:none}
+.result-group h3{margin:18px 0 8px;font-size:15px}
+.result-group .list{padding:0}
+.view-switch{display:flex;gap:6px}
+.view-switch button[aria-pressed=true]{background:var(--ink);color:white}
+.results[data-layout=grid] .result-group .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:14px}
+.results[data-layout=grid] .row{grid-template-columns:minmax(0,1fr);gap:8px;margin:0;padding:10px;border:1px solid var(--rule);min-width:0}
+.results[data-layout=grid] .row>.views{grid-column:1;grid-row:auto;text-align:left}
+.results[data-layout=grid] .row>.thumbnail{grid-row:auto}
+.results[data-layout=grid] .row img{grid-row:1}
+.format-empty{margin-top:14px}
 .list:not([hidden]){border-top:0}
 @media(max-width:620px){
  .wrap{padding-inline:18px}
@@ -162,6 +172,10 @@ footer{border-top:1px solid var(--rule);margin-top:30px;padding-top:14px}
 <option value="youtube">YouTube</option><option value="tiktok">TikTok · 실험</option><option value="instagram">Instagram 릴스 · 실험</option>
 </select></div>
 <p class="hint" id="social-hint" hidden>공개 검색에 노출된 영상 후보만 찾습니다. 조회수 필터는 적용하지 않습니다.</p>
+<div class="platform"><label for="format">영상 형식</label><select id="format">
+<option value="all">전체</option><option value="short">숏폼 · 3분 이하 / 릴스</option><option value="long">롱폼 · 3분 초과</option>
+</select></div>
+<p class="hint">검색 후보를 길이로 구분합니다. YouTube 공식 Shorts 여부와는 다릅니다.</p>
 <div class="minimum" id="minimum-controls">
 <label for="minimum">최소 조회수</label>
 <input id="minimum" type="number" inputmode="numeric" min="0" max="9007199254740991" step="1" value="1000000" required><span class="unit" aria-hidden="true">회</span>
@@ -173,6 +187,10 @@ footer{border-top:1px solid var(--rule);margin-top:30px;padding-top:14px}
 </form>
 <section class="results" aria-labelledby="results-title">
 <div class="heading"><h2 id="results-title">검색 결과</h2><span class="badge" id="count" hidden></span>
+<div class="view-switch" role="group" aria-label="결과 보기">
+<button type="button" data-view="grid" aria-pressed="true">그리드</button>
+<button type="button" data-view="list" aria-pressed="false">리스트</button>
+</div>
 <div class="sort" id="sort-controls" hidden><label for="sort">정렬</label>
 <select id="sort"><option value="relevance">관련도순</option><option value="views">조회수순</option><option value="newest">최신순</option></select></div></div>
 <p class="meta" id="summary" hidden></p>
@@ -185,7 +203,7 @@ footer{border-top:1px solid var(--rule);margin-top:30px;padding-top:14px}
 <p class="hint">이 후보는 최소 재생수 조건을 통과한 결과에 포함되지 않습니다.</p>
 <ol class="list" id="unknown-list"></ol>
 </section>
-<div class="listhead" aria-hidden="true"><span>영상</span><span></span><span>조회수</span></div>
+<p class="hint format-empty" id="format-empty" hidden>현재 검색 후보에 이 형식의 영상이 없습니다.</p>
 </section>
 <footer>YouTube는 상위 후보 최대 50개, 소셜 플랫폼은 공개 검색 후보 최대 10개를 확인합니다. 모두 주제 기준 검색입니다.</footer>
 </main>
@@ -221,7 +239,40 @@ for(const b of presets)b.addEventListener('click',()=>{
  syncMinimum();
 });
 const sort=$('#sort'), sortControls=$('#sort-controls');
-let searchResults=[];
+const format=$('#format'), viewButtons=[...document.querySelectorAll('[data-view]')];
+let searchResults=[], unknownResults=[], resultPlatform='youtube';
+let layout='grid';
+try{if(localStorage.getItem('million-index-view')==='list')layout='list';}catch{}
+function applyLayout(){
+ $('.results').dataset.layout=layout;
+ for(const b of viewButtons)b.setAttribute('aria-pressed',String(b.dataset.view===layout));
+}
+applyLayout();
+for(const b of viewButtons)b.addEventListener('click',()=>{
+ layout=b.dataset.view;
+ applyLayout();
+ try{localStorage.setItem('million-index-view',layout);}catch{}
+});
+function formatOf(v){
+ if(resultPlatform==='instagram')return 'short';
+ return Number.isInteger(v.duration)&&v.duration>0?(v.duration<=180?'short':'long'):'unknown';
+}
+function renderGroups(target, videos){
+ const groups=[['short',resultPlatform==='instagram'?'Instagram 릴스':'숏폼 · 3분 이하'],['long','롱폼 · 3분 초과'],['unknown','길이 미확인']];
+ target.replaceChildren();
+ let shown=0;
+ for(const [key,title] of groups){
+  if(format.value!=='all'&&format.value!==key)continue;
+  const matches=videos.filter(v=>formatOf(v)===key);
+  if(!matches.length)continue;
+  shown+=matches.length;
+  const group=document.createElement('li'), label=document.createElement('h3'), rows=document.createElement('ol');
+  group.className='result-group';label.textContent=title;rows.className='list';
+  rows.append(...matches.map(videoRow));group.append(label,rows);target.append(group);
+ }
+ return shown;
+}
+format.addEventListener('change',renderResults);
 const publishedTime=v=>{
  const time=Date.parse(v.publishedAt);
  return Number.isFinite(time)?time:-Infinity;
@@ -231,7 +282,11 @@ function renderResults(){
  const ordered=[...searchResults];
  if(sort.value==='views')ordered.sort((a,b)=>b.views-a.views);
  if(sort.value==='newest')ordered.sort((a,b)=>publishedTime(b)-publishedTime(a));
- list.replaceChildren(...ordered.map(videoRow));
+ const shown=renderGroups(list,ordered);
+ const unknownShown=renderGroups($('#unknown-list'),unknownResults);
+ if(!count.hidden)count.textContent=shown+'개';
+ $('#unknown-results').hidden=!unknownShown;
+ $('#format-empty').hidden=!(searchResults.length+unknownResults.length>0&&!shown&&!unknownShown);
 }
 sort.addEventListener('change',()=>{
  finishMotion('results');
@@ -307,7 +362,12 @@ function videoRow(v){
  link.rel='noopener';
  link.textContent=v.title;
  channel.className='meta';
- channel.textContent=v.channel;
+ channel.textContent=v.channel||'';
+ if(Number.isInteger(v.duration)&&v.duration>0){
+  const duration=document.createElement('span');
+  duration.textContent=(channel.textContent?' · ':'')+Math.floor(v.duration/60)+'분 '+(v.duration%60)+'초';
+  channel.append(duration);
+ }
  if(Number.isFinite(Date.parse(v.publishedAt))){
   const date=document.createElement('time');
   date.dateTime=v.publishedAt;
@@ -335,10 +395,11 @@ form.addEventListener('submit',async e=>{
  const tiktok=source==='tiktok';
  const minViews=source==='instagram'?0:minimum.valueAsNumber;
  for(const b of actionButtons)b.disabled=true;
- entry.disabled=minimum.disabled=platform.disabled=true;
+ entry.disabled=minimum.disabled=platform.disabled=format.disabled=true;
  submit.textContent='검색 중…';
  list.hidden=count.hidden=summary.hidden=sortControls.hidden=true;
- searchResults=[];
+ searchResults=[];unknownResults=[]; resultPlatform=source;
+ $('#format-empty').hidden=true;
  $('#search-warning').hidden=$('#unknown-results').hidden=true;
  $('#unknown-list').replaceChildren();
  finishMotion('results');
@@ -363,10 +424,9 @@ form.addEventListener('submit',async e=>{
     +(tiktok?' / 재생수 '+formatViews(minViews)+'회 이상':' / 공개 영상 후보')+(data.source?' · '+data.source:'');
    $('#search-warning').hidden=!data.warning;
    $('#search-warning').textContent=data.warning||'';
-   if(unknown.length){
-    $('#unknown-list').append(...unknown.map(videoRow));
-    $('#unknown-results').hidden=false;
-   }
+   unknownResults=unknown;
+   searchResults=candidates;
+   renderResults();
    summary.hidden=false;
    count.textContent=candidates.length+'개';
    count.hidden=false;
@@ -382,7 +442,7 @@ form.addEventListener('submit',async e=>{
     sort.querySelector('[value=views]').textContent='재생수순';
     sortControls.hidden=false;
     renderResults();
-   }else list.replaceChildren(...candidates.map(videoRow));
+   }else renderResults();
    list.hidden=false;
    show('success',candidates.length+'개 공개 영상 후보를 찾았습니다.');
    return;
@@ -406,7 +466,7 @@ form.addEventListener('submit',async e=>{
  }finally{
   list.removeAttribute('aria-busy');
   for(const b of actionButtons)b.disabled=false;
-  entry.disabled=platform.disabled=false;
+  entry.disabled=platform.disabled=format.disabled=false;
   syncPlatform();
   submit.innerHTML=submitLabel;
  }

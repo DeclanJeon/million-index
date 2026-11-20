@@ -40,6 +40,14 @@ def terms(s):
 DEFAULT_MIN_VIEWS = 1_000_000
 MAX_MIN_VIEWS = 9_007_199_254_740_991
 
+def duration_seconds(value):
+    if not isinstance(value,str):
+        return None
+    match = re.fullmatch(r'P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?',value)
+    if not match:
+        return None
+    return sum(int(n or 0)*unit for n,unit in zip(match.groups(),(86400,3600,60,1))) or None
+
 def rows(items, q, source, min_views=DEFAULT_MIN_VIEWS):
     out = []
     for item in items:
@@ -48,7 +56,7 @@ def rows(items, q, source, min_views=DEFAULT_MIN_VIEWS):
             continue
         s = item['snippet']
         hay = (s['title']+' '+s.get('description','')).lower()
-        out.append(dict(id=item['id'], title=s['title'], channel=s.get('channelTitle',''), views=int(count), publishedAt=s.get('publishedAt'), matches=[w for w in q.lower().split() if w in hay]))
+        out.append(dict(id=item['id'], title=s['title'], channel=s.get('channelTitle',''), views=int(count), publishedAt=s.get('publishedAt'), duration=duration_seconds(item.get('contentDetails',{}).get('duration')), matches=[w for w in q.lower().split() if w in hay]))
     return sorted(out, key=lambda r:-len(r['matches']))
 
 def api(endpoint, **params):
@@ -80,8 +88,12 @@ def parse_tiktok_metadata(html, expected_id):
         if item['id'] != expected_id:
             return {}
         count = item.get('stats', {}).get('playCount')
-        cover = item.get('video', {}).get('cover')
+        video = item.get('video', {})
+        cover = video.get('cover')
+        duration = video.get('duration')
         data = {}
+        if type(duration) is int and 0 < duration <= MAX_MIN_VIEWS:
+            data['duration'] = duration
         if type(count) is int and 0 <= count <= MAX_MIN_VIEWS:
             data['views'] = count
         if isinstance(cover, str) and cover.startswith('https://'):
@@ -429,7 +441,7 @@ def search(mode, value, min_views=DEFAULT_MIN_VIEWS, platform='youtube'):
         return data
     candidates = api('search',part='id',type='video',order='relevance',maxResults=50,q=q)
     ids = ','.join(x['id']['videoId'] for x in candidates)
-    details = api('videos',part='statistics,snippet',id=ids) if ids else []
+    details = api('videos',part='statistics,snippet,contentDetails',id=ids) if ids else []
     return dict(query=q, results=rows(details,q,source if source_platform == 'youtube' else None,min_views))
 
 class Handler(BaseHTTPRequestHandler):
