@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfaf6">
+<title>밀리언 인덱스 · 영상 레퍼런스 검색</title>
+<script async src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js" integrity="sha384-3vCAhD+a3BOliP3QqjQINn6ZWiZxoqu0WFxX5ZQZgqekDZuSb1mJBrrLMmu94H8f" crossorigin="anonymous"></script>
+<style>
+:root{
+ color-scheme:light;
+ --paper:#fbfaf6; --paper-deep:#f2f0e8; --ink:#14161a; --ink-2:#3a3d44; --muted:#5f6169;
+ --rule:#ddd8c9; --rule-strong:#b6b09c;
+ --accent:#1f5b3f; --accent-deep:#12402c; --accent-soft:#e9efe6;
+ --danger:#8a3222; --danger-soft:#fbf1ec;
+ --sans:"Pretendard","Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font:16px/1.62 var(--sans);-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent-soft);color:var(--accent-deep)}
+.wrap{max-width:980px;margin:0 auto;padding-inline:clamp(18px,4vw,44px)}
+a{color:inherit}
+/* masthead */
+header{border-bottom:1px solid var(--rule-strong)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:60px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;letter-spacing:-.01em;font-size:15px}
+.brand small{display:block;color:var(--muted);font:600 10.5px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.mark{display:grid;place-items:center;width:28px;height:28px;border-radius:2px;background:var(--accent);color:#fff;font:700 12px/1 var(--mono);letter-spacing:.02em}
+.threshold{color:var(--muted);font:600 12.5px/1.5 var(--mono);font-variant-numeric:tabular-nums;border-left:1px solid var(--rule-strong);padding-left:14px}
+/* page */
+main{padding-block:clamp(28px,5vw,52px) 40px}
+h1,h2,p{margin:0}
+.kicker{margin-bottom:12px;color:var(--muted);font:600 11.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(25px,3.1vw,31px);line-height:1.34;letter-spacing:-.02em;font-weight:700;max-width:24ch}
+.intro{margin-top:10px;color:var(--ink-2);max-width:56ch}
+/* form */
+form.search{margin-top:26px;border-top:2px solid var(--ink)}
+nav{display:flex;gap:24px;flex-wrap:wrap;border-bottom:1px solid var(--rule)}
+button,input,select{font:inherit;color:inherit;accent-color:var(--accent)}
+button{cursor:pointer;background:none;border:0;border-radius:0;min-height:44px;padding:6px 0;font-weight:600;
+ transition:color .12s ease,background-color .12s ease,border-color .12s ease,transform .06s ease,opacity .12s ease}
+nav button{color:var(--muted);font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px;padding-inline:1px}
+nav button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--ink);font-weight:700}
+.field{padding-top:18px}
+label{display:block;font-size:12.5px;font-weight:700;letter-spacing:.02em;margin-bottom:7px}
+.controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+input,select{background-color:transparent;border:0;border-bottom:1px solid var(--rule-strong);border-radius:0;padding:9px 2px;min-height:46px;
+ transition:border-color .12s ease,background-color .12s ease}
+input::placeholder{color:#8d8b82}
+input:focus,select:focus{outline:0}
+input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-bottom-color:var(--accent)}
+input[type=number]{appearance:textfield;-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+select{appearance:none;-webkit-appearance:none;padding-right:24px;cursor:pointer;
+ background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6169' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 3px center;background-size:11px 7px}
+button[type=submit]{background:var(--accent);color:#fff;border-radius:2px;border-bottom:2px solid var(--accent-deep);
+ min-height:46px;padding:0 22px;font-weight:700;font-size:14.5px;letter-spacing:.01em;white-space:nowrap;align-self:end}
+button[type=submit]:not(:disabled):active{transform:translateY(1px);border-bottom-width:1px}
+button:disabled{cursor:progress;opacity:.5}
+button[type=submit]:disabled{background:var(--paper-deep);color:var(--muted);border-bottom:2px solid var(--rule-strong);opacity:1}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(hover:hover){
+ nav button:not([aria-pressed=true]):not(:disabled):hover{color:var(--ink);border-bottom-color:var(--rule-strong)}
+ button[type=submit]:not(:disabled):hover{background:var(--accent-deep);border-bottom-color:var(--accent-deep)}
+ .presets button:not([aria-pressed=true]):not(:disabled):hover{background:var(--paper-deep);color:var(--ink)}
+ .row:hover{background:var(--paper-deep)}
+ .row a:hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+ input:not(:disabled):hover,select:not(:disabled):hover{border-bottom-color:var(--ink-2)}
+}
+.hint,.meta,footer{color:var(--muted);font-size:12.5px;line-height:1.6}
+.hint{margin-top:7px}
+.platform{display:flex;gap:12px;align-items:baseline;margin-top:16px}
+.platform label{margin:0;color:var(--muted);font-weight:600}
+.platform select{min-height:40px;padding:4px 24px 4px 2px;font-size:14px}
+.minimum{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:16px;padding-top:13px;border-top:1px solid var(--rule)}
+.minimum label{margin:0}
+.minimum input{width:11ch;min-height:40px;text-align:right;font-variant-numeric:tabular-nums}
+.minimum .unit{margin-left:-6px;color:var(--muted);font-size:12.5px}
+.presets{display:inline-flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.presets button{color:var(--muted);font-size:12.5px;min-height:38px;padding:0 11px;border-right:1px solid var(--rule);
+ font-variant-numeric:tabular-nums;border-bottom:0;letter-spacing:.01em}
+.presets button:last-child{border-right:0}
+.presets button[aria-pressed=true]{background:var(--ink);color:var(--paper);font-weight:700}
+.presets button:disabled{opacity:.45}
+/* results */
+.results{margin-top:40px}
+.heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--ink)}
+h2{font-size:16.5px;letter-spacing:-.01em;font-weight:700}
+.badge{color:var(--muted);font:600 12.5px/1 var(--mono);font-variant-numeric:tabular-nums}
+.sort{display:flex;align-items:baseline;gap:8px;margin-inline-start:auto}
+.sort label{margin:0;color:var(--muted);font-size:12px;font-weight:600}
+.sort select{min-height:36px;padding:2px 22px 2px 2px;font-size:13px;border-bottom:1px dotted var(--rule-strong)}
+#summary{margin:12px 0 4px;overflow-wrap:anywhere}
+.state{padding:22px 0;border-bottom:1px solid var(--rule);color:var(--ink-2)}
+.state[data-state=initial]{color:var(--muted)}
+.state[data-state=loading]{border-left:2px solid var(--accent);padding-left:14px}
+.state[data-state=error]{border-left:2px solid var(--danger);padding-left:14px;background:var(--danger-soft)}
+#status{font-weight:700;color:var(--ink)}
+.state[data-state=loading] #status::before,.state[data-state=error] #status::before{display:block;margin-bottom:5px;
+ font-size:11px;font-weight:700;letter-spacing:.12em}
+.state[data-state=loading] #status::before{content:"검색 중";color:var(--accent)}
+.state[data-state=error] #status::before{content:"오류";color:var(--danger)}
+#detail{margin-top:6px;color:var(--ink-2);font-size:13.5px}
+code{display:inline-block;margin-top:10px;padding:5px 8px;background:var(--paper-deep);border:1px solid var(--rule);border-radius:2px;font:600 12.5px/1.4 var(--mono)}
+.listhead{display:grid;grid-template-columns:104px minmax(0,1fr) 128px;gap:16px;padding:9px 8px;margin-inline:-8px;border-bottom:1px solid var(--rule);color:var(--muted);font:600 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.listhead span:last-child{text-align:right}
+.list{list-style:none;padding:0;margin:0}
+.row{display:grid;grid-template-columns:104px minmax(0,1fr) 128px;gap:16px;align-items:start;padding:15px 8px;margin-inline:-8px;border-bottom:1px solid var(--rule);transition:background-color .12s ease}
+.thumbnail{aspect-ratio:16/9;display:grid;place-items:center;background:var(--paper-deep);border:1px solid var(--rule);font-size:12px;color:var(--muted)}
+.thumbnail img,.thumbnail span{grid-area:1/1}
+#unknown-results{margin-top:16px}
+#unknown-results h3{font-size:15px}
+#search-warning{margin-bottom:10px}
+.row img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--paper-deep);border:1px solid var(--rule);border-radius:2px}
+.row a{color:var(--ink);font-weight:700;line-height:1.45;overflow-wrap:anywhere;text-decoration:none}
+.row .meta{margin-top:4px;overflow-wrap:anywhere}
+.matches{color:var(--muted);font-size:12px;margin-top:7px;overflow-wrap:anywhere}
+.views{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.views .meta{font-size:11px;letter-spacing:.04em}
+.views strong{display:block;margin-top:2px;font:700 15px/1.3 var(--mono);letter-spacing:-.01em}
+.row.social-result{grid-template-columns:minmax(0,1fr) auto}
+.social-result .views{grid-column:auto}
+footer{border-top:1px solid var(--rule);margin-top:30px;padding-top:14px}
+.list[hidden]+.listhead{display:none}
+.list:not([hidden]){border-top:0}
+@media(max-width:620px){
+ .wrap{padding-inline:18px}
+ .row.social-result{grid-template-columns:minmax(0,1fr)}
+ .social-result .views{grid-row:auto}
+ header .wrap{min-height:auto}
+ .threshold{border-left:0;padding-left:0;font-size:11.5px}
+ nav{gap:20px}
+ .controls{grid-template-columns:minmax(0,1fr);gap:10px}
+ .presets{display:flex;width:100%}
+ .presets button{flex:1;min-height:42px}
+ button[type=submit]{width:100%;margin-top:2px}
+ .listhead{display:none}
+ .row{grid-template-columns:76px minmax(0,1fr);gap:10px 12px;padding:14px 8px}
+ .views{grid-column:2;grid-row:2;display:flex;gap:6px;align-items:baseline;text-align:left}
+ .views strong{margin-top:0}
+ .row img{grid-row:1}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand"><span class="mark" aria-hidden="true">M.</span><div>밀리언 인덱스<small>Million Index</small></div></div><span class="threshold" id="threshold">조회수 1,000,000회 이상</span></div></header>
+<main class="wrap">
+<p class="kicker">리서치 데스크</p>
+<h1>영상 레퍼런스 검색</h1>
+<p class="intro">키워드나 참고 자료로 주제가 비슷한 인기 영상을 찾아보세요.</p>
+<form class="search" id="form">
+<nav aria-label="검색 방식"><button type="button" data-mode="keyword" aria-pressed="true">키워드</button><button type="button" data-mode="url" aria-pressed="false">영상 URL</button><button type="button" data-mode="file" aria-pressed="false">파일 업로드</button></nav>
+<div class="field"><label id="label" for="entry">찾고 싶은 주제</label>
+<div class="controls"><input id="entry" required aria-describedby="hint" placeholder="예: 핸드드립 커피"><button type="submit">레퍼런스 찾기</button></div>
+<p class="hint" id="hint">주제, 제품명, 영상에 담고 싶은 소재를 입력하세요.</p>
+<div class="platform"><label for="platform">검색 플랫폼</label><select id="platform">
+<option value="youtube">YouTube</option><option value="tiktok">TikTok · 실험</option><option value="instagram">Instagram 릴스 · 실험</option>
+</select></div>
+<p class="hint" id="social-hint" hidden>공개 검색에 노출된 영상 후보만 찾습니다. 조회수 필터는 적용하지 않습니다.</p>
+<div class="minimum" id="minimum-controls">
+<label for="minimum">최소 조회수</label>
+<input id="minimum" type="number" inputmode="numeric" min="0" max="9007199254740991" step="1" value="1000000" required><span class="unit" aria-hidden="true">회</span>
+<div class="presets" role="group" aria-label="최소 조회수 프리셋">
+<button type="button" data-views="100000" aria-pressed="false">10만</button>
+<button type="button" data-views="1000000" aria-pressed="true">100만</button>
+<button type="button" data-views="10000000" aria-pressed="false">1,000만</button>
+</div></div></div>
+</form>
+<section class="results" aria-labelledby="results-title">
+<div class="heading"><h2 id="results-title">검색 결과</h2><span class="badge" id="count" hidden></span>
+<div class="sort" id="sort-controls" hidden><label for="sort">정렬</label>
+<select id="sort"><option value="relevance">관련도순</option><option value="views">조회수순</option><option value="newest">최신순</option></select></div></div>
+<p class="meta" id="summary" hidden></p>
+<div class="state" id="state" data-state="initial"><p id="status">아직 검색하지 않았어요.</p><p id="detail">검색하면 제목, 채널, 일치 키워드와 정확한 조회수가 여기에 표시됩니다.</p><code id="setup" hidden>./start-with-key.sh</code></div>
+<p class="sr-only" id="announcement" role="status" aria-atomic="true"></p>
+<p class="hint" id="search-warning" hidden></p>
+<ol class="list" id="list" aria-label="관련 영상" hidden></ol>
+<section id="unknown-results" hidden aria-labelledby="unknown-title">
+<h3 id="unknown-title">재생수 미확인 후보</h3>
+<p class="hint">이 후보는 최소 재생수 조건을 통과한 결과에 포함되지 않습니다.</p>
+<ol class="list" id="unknown-list"></ol>
+</section>
+<div class="listhead" aria-hidden="true"><span>영상</span><span></span><span>조회수</span></div>
+</section>
+<footer>YouTube는 상위 후보 최대 50개, 소셜 플랫폼은 공개 검색 후보 최대 10개를 확인합니다. 모두 주제 기준 검색입니다.</footer>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const entry=$('#entry'), form=$('#form'), list=$('#list'), count=$('#count'), summary=$('#summary'), state=$('#state');
+const submit=form.querySelector('[type=submit]'), modes=[...form.querySelectorAll('[data-mode]')];
+const platform=$('#platform'), minimum=$('#minimum'), presets=[...form.querySelectorAll('[data-views]')];
+const actionButtons=[...modes,...presets,submit];
+const formatViews=n=>n.toLocaleString('ko-KR');
+function syncMinimum(){
+ const target=minimum.valueAsNumber, metric=platform.value==='tiktok'?'재생수':'조회수';
+ for(const b of presets)b.setAttribute('aria-pressed',String(target===Number(b.dataset.views)));
+ $('#threshold').textContent=minimum.validity.valid?metric+' '+formatViews(target)+'회 이상':'최소 '+metric+' 직접 설정';
+}
+function syncPlatform(){
+ const social=platform.value!=='youtube';
+ const instagram=platform.value==='instagram';
+ $('#minimum-controls').hidden=instagram;
+ $('label[for=minimum]').textContent=platform.value==='tiktok'?'최소 재생수':'최소 조회수';
+ $('#social-hint').hidden=!social;
+ $('#social-hint').textContent=platform.value==='tiktok'
+  ? '상위 8개 후보의 공개 페이지에서 커버와 재생수를 확인합니다. 확인할 수 없으면 미확인으로 표시합니다.'
+  : '상위 5개 릴스의 공개 페이지에서 썸네일과 조회수를 확인합니다. 비공개이거나 공개 수치가 없으면 미확인으로 표시합니다.';
+ minimum.disabled=instagram;
+ if(instagram)$('#threshold').textContent='공개 영상 후보';
+ else syncMinimum();
+}
+platform.addEventListener('change',syncPlatform);
+minimum.addEventListener('input',syncMinimum);
+for(const b of presets)b.addEventListener('click',()=>{
+ minimum.value=b.dataset.views;
+ syncMinimum();
+});
+const sort=$('#sort'), sortControls=$('#sort-controls');
+let searchResults=[];
+const publishedTime=v=>{
+ const time=Date.parse(v.publishedAt);
+ return Number.isFinite(time)?time:-Infinity;
+};
+const publishedDate=new Intl.DateTimeFormat('ko-KR',{dateStyle:'medium',timeZone:'Asia/Seoul'});
+function renderResults(){
+ const ordered=[...searchResults];
+ if(sort.value==='views')ordered.sort((a,b)=>b.views-a.views);
+ if(sort.value==='newest')ordered.sort((a,b)=>publishedTime(b)-publishedTime(a));
+ list.replaceChildren(...ordered.map(videoRow));
+}
+sort.addEventListener('change',()=>{
+ finishMotion('results');
+ renderResults();
+ $('#announcement').textContent=sort.selectedOptions[0].textContent+'으로 정렬했습니다.';
+});
+const submitLabel=submit.innerHTML;
+let mode='keyword';
+const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
+const motionChannels=new Map();
+function finishMotion(channel){
+ const tween=motionChannels.get(channel);
+ if(tween){tween.progress(1);motionChannels.delete(channel);}
+}
+motionPreference.addEventListener('change',e=>{
+ if(e.matches)for(const channel of motionChannels.keys())finishMotion(channel);
+});
+function reveal(channel,targets,{distance=5,duration=.2,stagger=0}={}){
+ finishMotion(channel);
+ if(motionPreference.matches||!window.gsap||!targets.length)return;
+ const tween=window.gsap.fromTo(targets,{y:distance,opacity:.84},{
+  y:0,opacity:1,duration,stagger,ease:'power2.out',clearProps:'transform,opacity',
+  onComplete:()=>motionChannels.delete(channel)
+ });
+ motionChannels.set(channel,tween);
+}
+const config={
+ keyword:['text','찾고 싶은 주제','예: 핸드드립 커피','주제, 제품명, 영상에 담고 싶은 소재를 입력하세요.'],
+ url:['url','공개 영상 주소','YouTube · Instagram 릴스 · TikTok 링크','링크의 공개 제목·설명에서 검색어를 추출하고, 아래에서 선택한 플랫폼에서 비슷한 영상을 찾습니다.'],
+ file:['file','기획서 또는 자막 파일','','UTF-8 TXT · MD · SRT · VTT, 256KB 이하. 추출한 검색어만 검색 서비스에 전송됩니다.']
+};
+entry.accept='.txt,.md,.srt,.vtt';
+for(const b of modes)b.addEventListener('click',()=>{
+ if(mode===b.dataset.mode)return;
+ mode=b.dataset.mode;
+ const [type,label,placeholder,hint]=config[mode];
+ for(const m of modes)m.setAttribute('aria-pressed',String(b===m));
+ entry.value='';
+ entry.type=type;
+ entry.placeholder=placeholder;
+ $('#label').textContent=label;
+ $('#hint').textContent=hint;
+ entry.focus();
+ reveal('input',[$('#label'),$('#hint')],{distance:3,duration:.16});
+});
+function show(kind,title,detail='',setup=false){
+ state.hidden=kind==='success';
+ state.dataset.state=kind;
+ $('#status').textContent=title;
+ $('#announcement').textContent=[title,detail].filter(Boolean).join(' ');
+ $('#detail').textContent=detail;
+ $('#detail').hidden=!detail;
+ $('#setup').hidden=!setup;
+}
+function videoRow(v){
+ const row=document.createElement('li'),img=document.createElement('img'),body=document.createElement('div');
+ const link=document.createElement('a'),channel=document.createElement('p'),matches=document.createElement('p');
+ const views=document.createElement('div'),label=document.createElement('span'),number=document.createElement('strong');
+ row.className='row';
+ if(v.thumbnail)img.src=v.thumbnail;
+ else if(!v.url)img.src='https://i.ytimg.com/vi/'+encodeURIComponent(v.id)+'/mqdefault.jpg';
+ img.alt='';
+ img.loading='lazy';
+ const cover=document.createElement('div'), fallback=document.createElement('span');
+ cover.className='thumbnail';
+ fallback.textContent='썸네일 없음';
+ fallback.hidden=img.hasAttribute('src');
+ img.hidden=!img.hasAttribute('src');
+ img.addEventListener('error',()=>{img.hidden=true;fallback.hidden=false;},{once:true});
+ cover.append(fallback,img);
+ link.href=v.url||'https://www.youtube.com/watch?v='+encodeURIComponent(v.id);
+ link.target='_blank';
+ link.rel='noopener';
+ link.textContent=v.title;
+ channel.className='meta';
+ channel.textContent=v.channel;
+ if(Number.isFinite(Date.parse(v.publishedAt))){
+  const date=document.createElement('time');
+  date.dateTime=v.publishedAt;
+  date.textContent=publishedDate.format(new Date(v.publishedAt));
+  channel.append(v.channel?' · ':'',date);
+ }
+ matches.className='matches';
+ matches.textContent=v.matches.length?'일치 키워드 · '+v.matches.join(', '):'YouTube 관련 검색';
+ views.className='views';
+ label.className='meta';
+ label.textContent=v.url?.startsWith('https://www.tiktok.com/')?'재생수':'조회수';
+ number.textContent=v.views===null?'미확인':v.views.toLocaleString('ko-KR')+'회';
+ body.append(link,channel,matches);
+ views.append(label,number);
+ if(v.url){
+  matches.textContent='공개 웹 검색 후보';
+ }
+ row.append(cover,body,views);
+ return row;
+}
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(submit.disabled)return;
+ const source=platform.value, social=source!=='youtube';
+ const tiktok=source==='tiktok';
+ const minViews=source==='instagram'?0:minimum.valueAsNumber;
+ for(const b of actionButtons)b.disabled=true;
+ entry.disabled=minimum.disabled=platform.disabled=true;
+ submit.textContent='검색 중…';
+ list.hidden=count.hidden=summary.hidden=sortControls.hidden=true;
+ searchResults=[];
+ $('#search-warning').hidden=$('#unknown-results').hidden=true;
+ $('#unknown-list').replaceChildren();
+ finishMotion('results');
+ list.replaceChildren();
+ list.setAttribute('aria-busy','true');
+ show('loading','관련 영상을 찾고 있어요.',social?'공개 검색 인덱스를 조회하는 중입니다.':'검색 후보의 조회수를 확인하는 중입니다.');
+ try{
+  let value=entry.value;
+  if(mode==='file'){
+   const f=entry.files[0];
+   if(!f||f.size>262144||!/\.(txt|md|srt|vtt)$/i.test(f.name))throw Error('256KB 이하의 텍스트 또는 자막 파일을 선택하세요.');
+   try{value=new TextDecoder('utf-8',{fatal:true}).decode(await f.arrayBuffer());}
+   catch{throw Error('UTF-8로 저장한 텍스트 파일을 선택하세요.');}
+  }
+  const response=await fetch('/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode,value,minViews,platform:source})});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'검색에 실패했습니다.');
+  if(social){
+   const candidates=data.candidates||data.unverified||[];
+   const unknown=tiktok?(data.unverified||[]):[];
+   summary.textContent='검색어 · '+data.query+(data.expandedQuery?' / 보강 · '+data.expandedQuery:'')
+    +(tiktok?' / 재생수 '+formatViews(minViews)+'회 이상':' / 공개 영상 후보')+(data.source?' · '+data.source:'');
+   $('#search-warning').hidden=!data.warning;
+   $('#search-warning').textContent=data.warning||'';
+   if(unknown.length){
+    $('#unknown-list').append(...unknown.map(videoRow));
+    $('#unknown-results').hidden=false;
+   }
+   summary.hidden=false;
+   count.textContent=candidates.length+'개';
+   count.hidden=false;
+   if(!candidates.length){
+    show('empty',tiktok?'최소 재생수를 충족한 영상이 없어요.':'공개 영상 후보를 찾지 못했어요.',
+     tiktok?'기준을 낮추거나 아래의 미확인 후보를 참고하세요.':'다른 검색어로 다시 시도해 보세요.');
+    return;
+   }
+   if(tiktok){
+    searchResults=candidates;
+    sort.querySelector('[value=newest]').hidden=true;
+    if(sort.value==='newest')sort.value='relevance';
+    sort.querySelector('[value=views]').textContent='재생수순';
+    sortControls.hidden=false;
+    renderResults();
+   }else list.replaceChildren(...candidates.map(videoRow));
+   list.hidden=false;
+   show('success',candidates.length+'개 공개 영상 후보를 찾았습니다.');
+   return;
+  }
+  summary.textContent='검색어 · '+data.query+' / 조회수 '+formatViews(minViews)+'회 이상';
+  summary.hidden=false;
+  count.textContent=data.results.length+'개';
+  count.hidden=false;
+  if(!data.results.length){show('empty','조회수 기준을 충족한 영상이 없어요.','최소 조회수를 낮추거나 다른 검색어로 다시 시도해 보세요.');return;}
+  searchResults=data.results;
+  sort.querySelector('[value=newest]').hidden=false;
+  sort.querySelector('[value=views]').textContent='조회수순';
+  renderResults();
+  list.hidden=sortControls.hidden=false;
+  list.setAttribute('aria-busy','false');
+  show('success',data.results.length+'개 영상을 찾았습니다.');
+  reveal('results',[...list.children].slice(0,5),{distance:6,duration:.22,stagger:.035});
+ }catch(error){
+  if(error.message.includes('YOUTUBE_API_KEY'))show('error','YouTube API 키 설정이 필요해요.','프로젝트 폴더에서 아래 스크립트를 실행하고, 터미널에 키를 입력한 뒤 다시 검색하세요.',true);
+  else show('error','검색을 완료하지 못했어요.',error.message==='Failed to fetch'?'로컬 서버가 실행 중인지 확인한 뒤 다시 검색하세요.':error.message);
+ }finally{
+  list.removeAttribute('aria-busy');
+  for(const b of actionButtons)b.disabled=false;
+  entry.disabled=platform.disabled=false;
+  syncPlatform();
+  submit.innerHTML=submitLabel;
+ }
+});
+</script>
+</body>
+</html>

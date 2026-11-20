@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+.env-tmp-*
+__pycache__/
+server.log
+.design-shots/
