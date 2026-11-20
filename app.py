@@ -444,6 +444,19 @@ def search(mode, value, min_views=DEFAULT_MIN_VIEWS, platform='youtube'):
     details = api('videos',part='statistics,snippet,contentDetails',id=ids) if ids else []
     return dict(query=q, results=rows(details,q,source if source_platform == 'youtube' else None,min_views))
 
+STATIC_DIR = Path(__file__).resolve().with_name('static')
+STATIC_FILES = {
+    '/robots.txt': ('robots.txt', 'text/plain'),
+    '/sitemap.xml': ('sitemap.xml', 'application/xml'),
+    '/site.webmanifest': ('site.webmanifest', 'application/manifest+json'),
+    '/og-image.png': ('og-image.png', 'image/png'),
+    '/favicon.svg': ('favicon.svg', 'image/svg+xml'),
+    '/favicon.ico': ('favicon-32.png', 'image/png'),
+    '/apple-touch-icon.png': ('apple-touch-icon.png', 'image/png'),
+    '/icon-192.png': ('icon-192.png', 'image/png'),
+    '/icon-512.png': ('icon-512.png', 'image/png'),
+}
+
 class Handler(BaseHTTPRequestHandler):
     def reply(self, code, data, mime='application/json'):
         body = data if isinstance(data,bytes) else json.dumps(data,ensure_ascii=False).encode()
@@ -452,9 +465,35 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length',str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+    def asset(self):
+        path = urlparse(self.path).path
+        if path == '/':
+            return Path(__file__).with_name('index.html').read_bytes(), 'text/html', 'no-cache'
+        if path in STATIC_FILES:
+            name, mime = STATIC_FILES[path]
+            cache = 'public, max-age=86400' if mime.startswith('image/') else 'public, max-age=3600'
+            return (STATIC_DIR / name).read_bytes(), mime, cache
+        return None
+
+    def send_asset(self, head=False):
+        found = self.asset()
+        if not found:
+            return self.send_error(404)
+        body, mime, cache = found
+        self.send_response(200)
+        text = mime.startswith('text/') or mime.endswith(('xml', 'json'))
+        self.send_header('Content-Type', mime + ('; charset=utf-8' if text else ''))
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', cache)
+        self.end_headers()
+        if not head:
+            self.wfile.write(body)
+
     def do_GET(self):
-        if self.path != '/': return self.send_error(404)
-        self.reply(200, Path(__file__).with_name('index.html').read_bytes(),'text/html')
+        self.send_asset()
+
+    def do_HEAD(self):
+        self.send_asset(head=True)
     def do_POST(self):
         if self.path != '/search': return self.send_error(404)
         if self.headers.get_content_type()!='application/json': return self.send_error(415)
