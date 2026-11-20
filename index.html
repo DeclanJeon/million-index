@@ -22,8 +22,8 @@
 <meta name="twitter:title" content="밀리언 인덱스 · 잘 된 영상만 골라 보는 레퍼런스 검색">
 <meta name="twitter:description" content="키워드·영상 링크·기획서로 YouTube, TikTok, Instagram 릴스에서 주제가 비슷하고 조회수가 검증된 인기 영상을 찾는 무료 레퍼런스 검색 도구.">
 <meta name="twitter:image" content="https://mi.ponslink.com/og-image.png">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.ico" sizes="32x32" type="image/png">
+<link rel="icon" href="/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"밀리언 인덱스","alternateName":"Million Index","url":"https://mi.ponslink.com/","description":"키워드·영상 링크·기획서로 YouTube, TikTok, Instagram 릴스에서 주제가 비슷하고 조회수가 검증된 인기 영상을 찾는 무료 레퍼런스 검색 도구.","applicationCategory":"MultimediaApplication","operatingSystem":"Web","inLanguage":"ko","image":"https://mi.ponslink.com/og-image.png","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"sameAs":["https://github.com/DeclanJeon/million-index"]}</script>
@@ -58,8 +58,7 @@ header{position:sticky;top:0;z-index:5;background:rgba(246,245,241,.86);backdrop
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:62px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:16px;text-decoration:none}
 .brand small{display:block;color:var(--muted);font:600 10.5px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase}
-.mark{position:relative;width:32px;height:32px;border-radius:10px;background:var(--ink);display:grid;place-items:center;color:#fff;font:800 13px/1 var(--sans)}
-.mark::after{content:"";position:absolute;right:-3px;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.mark{display:block;width:32px;height:32px;border-radius:9px}
 .threshold{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);font:600 12.5px/1.2 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 .threshold::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
 
@@ -208,7 +207,7 @@ footer a{font-weight:700}
 </style>
 </head>
 <body>
-<header><div class="wrap"><a class="brand" href="/"><span class="mark" aria-hidden="true">M</span><span>밀리언 인덱스<small>Million Index</small></span></a><span class="threshold" id="threshold">조회수 1,000,000회 이상</span></div></header>
+<header><div class="wrap"><a class="brand" href="/"><img class="mark" src="/icon-192.png" alt="" width="32" height="32"><span>밀리언 인덱스<small>Million Index</small></span></a><span class="threshold" id="threshold">조회수 1,000,000회 이상</span></div></header>
 <main class="wrap">
 <div class="hero">
 <p class="kicker"><span class="platform-dots" aria-hidden="true"><i style="background:var(--yt)"></i><i style="background:var(--tt)"></i><i style="background:var(--ig)"></i></span>YouTube · TikTok · Instagram 릴스</p>

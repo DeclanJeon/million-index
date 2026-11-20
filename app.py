@@ -450,7 +450,6 @@ STATIC_FILES = {
     '/sitemap.xml': ('sitemap.xml', 'application/xml'),
     '/site.webmanifest': ('site.webmanifest', 'application/manifest+json'),
     '/og-image.png': ('og-image.png', 'image/png'),
-    '/favicon.svg': ('favicon.svg', 'image/svg+xml'),
     '/favicon.ico': ('favicon-32.png', 'image/png'),
     '/apple-touch-icon.png': ('apple-touch-icon.png', 'image/png'),
     '/icon-192.png': ('icon-192.png', 'image/png'),
